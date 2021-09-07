@@ -1,20 +1,13 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { Button, Grid, Input } from "semantic-ui-react";
-import { cloudService } from "services/cloud";
 import { COIN } from "views/Binance/Binance";
 import moment from "moment";
+import axios from "axios";
 
 const Cloud = () => {
-  const [upload, setUpload] = React.useState("");
-  const [isUpload, setIsUpload] = React.useState(false);
-
   const fileInput = React.useRef();
-
   const [value, setValue] = React.useState("");
-  const [isSync, setIsSync] = React.useState(false);
-  const [isDone, setIsDone] = React.useState(false);
-  const [isError, setIsError] = React.useState(false);
 
   const handleClickExport = async () => {
     const element = document.createElement("a");
@@ -33,8 +26,13 @@ const Cloud = () => {
     fileReader.readAsText(event.target.files[0]);
   };
 
-  const handleClickSync = (value) => {
+  const handleClickSync = async (value) => {
     try {
+      if (/^https?:\/\/.*/.test(value)) {
+        const { data } = await axios.get(value);
+        if (typeof data === "object") value = JSON.stringify(data);
+        if (typeof data === "string") value = data;
+      }
       const parsed = JSON.parse(value);
       if (Array.isArray(parsed)) {
         localStorage.setItem(COIN, value);
@@ -61,10 +59,10 @@ const Cloud = () => {
             <Link to="/">
               <Button onClick={() => handleClickSync(value)}>BACK</Button>
             </Link>
-            <Button color="green" loading={isUpload} onClick={handleClickExport}>
+            <Button color="green" onClick={handleClickExport}>
               EXPORT
             </Button>
-            <Button color="blue" loading={isUpload} onClick={() => fileInput.current.click()}>
+            <Button color="blue" onClick={() => fileInput.current.click()}>
               IMPORT
             </Button>
             <input ref={fileInput} type="file" accept="application/json" hidden onChange={handleImportFile} />
@@ -74,7 +72,9 @@ const Cloud = () => {
         <Grid.Row>
           <Grid.Column>
             <Input
+              style={{ width: 360 }}
               value={value}
+              placeholder="URL or value"
               onChange={(event) => {
                 const { value } = event.target;
                 setValue(value);
